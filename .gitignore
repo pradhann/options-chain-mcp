@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.python-version
+
+# Pytest / mypy / coverage
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project — personal study material (not part of the package)
+Books/
+Syllabus/
+
+# Project — runtime data (positions + percentile history live per-user)
+.optionslab/
+
+# Project — per-user MCP config (paths are absolute to one user)
+.mcp.json
+
+# Project — Claude Code workspace state
+.claude/
+
+# Chart artifacts generated during interactive use
+optionslab_*.png
+/*.png
+
+# Docs build output
+site/
+docs/_build/

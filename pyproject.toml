@@ -1,0 +1,78 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "optionslab"
+version = "0.1.0"
+description = "Options analytics for traders and learners — CLI and MCP server in one package."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+authors = [{ name = "Nripesh Pradhan" }]
+keywords = [
+    "options", "derivatives", "black-scholes", "greeks",
+    "volatility", "vix", "vrp", "mcp", "claude",
+    "trading", "finance", "analytics",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "matplotlib>=3.8",
+    "yfinance>=0.2.40",
+    "mcp>=0.9",
+]
+
+[project.optional-dependencies]
+oracle = ["py_vollib>=1.0.3"]      # cross-check our analytic Greeks
+test = ["pytest>=8", "py_vollib>=1.0.3"]
+docs = ["mkdocs-material>=9.5", "mkdocs-include-markdown-plugin"]
+dev = [
+    "pytest>=8",
+    "py_vollib>=1.0.3",
+    "ruff>=0.6",
+    "mkdocs-material>=9.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/pradhann/options-chain-mcp"
+Documentation = "https://pradhann.github.io/options-chain-mcp/"
+Repository = "https://github.com/pradhann/options-chain-mcp"
+Issues = "https://github.com/pradhann/options-chain-mcp/issues"
+Changelog = "https://github.com/pradhann/options-chain-mcp/blob/main/CHANGELOG.md"
+
+[project.scripts]
+optionslab = "optionslab.adapters.cli:main"
+
+# `python -m optionslab.mcp_server` is the documented MCP entrypoint.
+# Also expose it as a console script for convenience:
+optionslab-mcp = "optionslab.adapters.mcp:main"
+
+[tool.setuptools.packages.find]
+include = ["optionslab*"]
+exclude = ["tests*", "docs*", "Books*", "Syllabus*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = ["E501"]
