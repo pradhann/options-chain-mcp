@@ -17,8 +17,6 @@ never ambiguous):
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import Optional
-
 
 _GREEK_CONVENTIONS = {
     "delta": "per +$1 spot",

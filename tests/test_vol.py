@@ -18,11 +18,10 @@ from optionslab.analysis.vol.atm import (
     iv_at_delta,
 )
 from optionslab.analysis.vol.percentile import (
-    percentile_from_series,
     MIN_PCTILE_SAMPLES,
+    percentile_from_series,
 )
-from optionslab.analysis.vol.term import regime_label, regime_action
-
+from optionslab.analysis.vol.term import regime_action, regime_label
 
 # ---------- RV estimator zoo ----------
 
@@ -41,13 +40,9 @@ def synthetic_ohlc():
 
 def test_rv_estimators_return_positive(synthetic_ohlc):
     """All five estimators produce positive, finite annualized vols."""
-    from optionslab.data.vol import (
-        _rv_close_to_close, _rv_parkinson, _rv_garman_klass,
-        _rv_rogers_satchell, _rv_yang_zhang,
-    )
-    for fn in (_rv_close_to_close, _rv_parkinson, _rv_garman_klass,
-               _rv_rogers_satchell, _rv_yang_zhang):
-        s = fn(synthetic_ohlc, 21).dropna()
+    from optionslab.estimators import ESTIMATORS, rv_series
+    for name in ESTIMATORS:
+        s = rv_series(synthetic_ohlc, name, 21).dropna()
         assert not s.empty
         assert (s > 0).all()
         assert np.isfinite(s).all()
@@ -60,9 +55,9 @@ def test_parkinson_below_or_equal_close_to_close(synthetic_ohlc):
     the close-to-close standard deviation when daily returns are
     well-behaved.
     """
-    from optionslab.data.vol import _rv_close_to_close, _rv_parkinson
-    c2c = _rv_close_to_close(synthetic_ohlc, 21).dropna()
-    park = _rv_parkinson(synthetic_ohlc, 21).dropna()
+    from optionslab.estimators import rv_series
+    c2c = rv_series(synthetic_ohlc, "close_to_close", 21).dropna()
+    park = rv_series(synthetic_ohlc, "parkinson", 21).dropna()
     # Allow tiny numerical slack.
     assert (park.iloc[-1] <= c2c.iloc[-1] * 1.5)  # generous bound
 

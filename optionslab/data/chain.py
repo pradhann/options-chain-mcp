@@ -9,7 +9,6 @@ point everything else builds on.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -24,7 +23,6 @@ from .quotes import (
     make_ticker,
     resolve_expiration,
 )
-
 
 _RAW_COLUMNS = [
     "strike", "bid", "ask", "lastPrice",
@@ -63,11 +61,16 @@ def format_raw(df: pd.DataFrame) -> pd.DataFrame:
 def add_value_decomposition(
     df: pd.DataFrame, spot: float, option_type: str
 ) -> pd.DataFrame:
-    """Add Mid, Intrinsic, Extrinsic columns."""
+    """Add Mid, Intrinsic, Extrinsic columns.
+
+    Mid comes from a two-sided quote only: a zero or missing Bid or Ask
+    (after-hours, dead strikes) leaves Mid and Extrinsic as NaN, never 0.
+    """
     if option_type not in ("call", "put"):
         raise ValueError(f"option_type must be 'call'|'put', got {option_type!r}")
     out = df.copy()
-    out["Mid"] = ((out["Bid"] + out["Ask"]) / 2).round(3)
+    two_sided = (out["Bid"] > 0) & (out["Ask"] > 0)
+    out["Mid"] = ((out["Bid"] + out["Ask"]) / 2).where(two_sided).round(3)
     if option_type == "call":
         out["Intrinsic"] = (spot - out["Strike"]).clip(lower=0).round(2)
     else:
@@ -105,7 +108,7 @@ def add_greeks(
 
 
 def filter_near_money(
-    df: pd.DataFrame, spot: Optional[float], n: int
+    df: pd.DataFrame, spot: float | None, n: int
 ) -> pd.DataFrame:
     """Keep the n strikes nearest spot. No-op if spot unknown or n <= 0."""
     if spot is None or n <= 0:
@@ -138,7 +141,7 @@ class ChainSnapshot:
     r: float           # rate used for Greeks (0 if Greeks skipped)
     q: float
 
-    def to_records(self, *, calls_first: bool = True) -> dict:
+    def to_records(self) -> dict:
         """JSON-safe representation: spot/expiration + records lists."""
         import json
         return {
@@ -156,10 +159,10 @@ class ChainSnapshot:
 def load_chain(
     symbol: str,
     *,
-    expiration: Optional[str] = None,
-    exp_index: Optional[int] = None,
-    r: Optional[float] = None,
-    q: Optional[float] = None,
+    expiration: str | None = None,
+    exp_index: int | None = None,
+    r: float | None = None,
+    q: float | None = None,
     greeks: bool = True,
 ) -> ChainSnapshot:
     """Fetch + decompose a chain, optionally with per-strike Greeks.
@@ -195,7 +198,7 @@ def load_chain(
     )
 
 
-def iv_at_strike(df: pd.DataFrame, strike: float) -> Optional[float]:
+def iv_at_strike(df: pd.DataFrame, strike: float) -> float | None:
     """IV (decimal) of the listed strike nearest `strike`, or None."""
     if df.empty:
         return None

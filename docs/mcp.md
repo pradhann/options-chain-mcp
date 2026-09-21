@@ -45,10 +45,23 @@
 
 ## Tool catalogue
 
-### Market data
-`get_spot_price`, `list_expirations_tool`, `chain`, `realized_vol_extended`,
-`iv_term_structure`, `vix_term_structure`, `vix_strip`,
-`next_earnings`, `recent_news`, `analyst_targets`.
+### Sourced data feeds (see [Data feeds](feeds.md))
+Every tool below returns `{status, provenance, data, warnings, not_verified}`.
+
+- Pre-trade and jobs: `pretrade_page`, `refresh_all`, `weekly_check`.
+- Chains: `chain_report`, `skew_history`, `atm_iv_history`, `oi_change`.
+- Underlying: `get_spot_price`, `realized_vol` (5x3 matrix), `corporate_actions`,
+  `dividend_policy`, `analyst_targets` (staleness only), `next_earnings`.
+- Futures and ETFs: `futures_curve`, `prompt_spread`, `crack_spreads`,
+  `etf_holdings`, `etf_roll_rule`.
+- Physical and positioning: `eia_weekly`, `eia_summary`, `eia_steo`, `cot_positioning`.
+- SEC: `sec_sweep`, `sec_filings`, `sec_insiders`, `sec_manual_entry`.
+- Calendar and markets: `calendar_events`, `polymarket_reads`, `polymarket_search`.
+- Book: `book_marks`, `delta_notional_after`, `ledger_open`, `ledger_close`, `ledger_review`.
+
+### Market data (legacy chain and vol tools)
+`list_expirations_tool`, `chain`, `iv_term_structure`, `vix_term_structure`,
+`vix_strip`, `recent_news`.
 
 ### Position analysis
 `payoff`, `value`, `greeks`, `metrics`, `scenario`, `theoretical_price`.

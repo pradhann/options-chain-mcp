@@ -1,18 +1,18 @@
-"""Event-layer fetchers: earnings, news, analyst targets.
+"""Recent headlines from yfinance (display only; never a feed for sizing).
 
-Thin yfinance wrappers. Never raise — return {} / [] when data is missing
-or yfinance is uncooperative. The caller decides whether absence is fatal.
+Earnings dates live in `feeds.calendar` (two sources, verified flag) and
+analyst targets in `feeds.fundamentals` (staleness only).
 """
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 import yfinance as yf
 
 
-def _to_iso(value: Any) -> Optional[str]:
+def _to_iso(value: Any) -> str | None:
     """Best-effort date -> 'YYYY-MM-DD' string."""
     try:
         if value is None:
@@ -22,29 +22,6 @@ def _to_iso(value: Any) -> Optional[str]:
         return pd.to_datetime(value).strftime("%Y-%m-%d")
     except Exception:
         return str(value)
-
-
-def next_earnings(ticker: yf.Ticker) -> dict:
-    """Next earnings date + EPS/revenue estimates.
-
-    Keys with None when yfinance has nothing. Never raises.
-    """
-    out: dict[str, Any] = {
-        "date": None, "eps_estimate": None, "revenue_estimate": None,
-    }
-    try:
-        cal = ticker.calendar
-    except Exception:
-        cal = None
-    if isinstance(cal, dict):
-        dates = cal.get("Earnings Date")
-        if isinstance(dates, (list, tuple)) and dates:
-            out["date"] = _to_iso(dates[0])
-        elif dates is not None:
-            out["date"] = _to_iso(dates)
-        out["eps_estimate"] = cal.get("Earnings Average")
-        out["revenue_estimate"] = cal.get("Revenue Average")
-    return out
 
 
 def recent_news(ticker: yf.Ticker, n: int = 10) -> list[dict]:
@@ -67,22 +44,4 @@ def recent_news(ticker: yf.Ticker, n: int = 10) -> list[dict]:
             if isinstance(c.get("provider"), dict)
             else it.get("publisher", ""),
         })
-    return out
-
-
-def analyst_targets(ticker: yf.Ticker) -> dict:
-    """Analyst price targets + consensus rating."""
-    out: dict[str, Any] = {
-        "mean": None, "high": None, "low": None,
-        "num_analysts": None, "rating": None,
-    }
-    try:
-        info = ticker.info
-    except Exception:
-        return out
-    out["mean"] = info.get("targetMeanPrice")
-    out["high"] = info.get("targetHighPrice")
-    out["low"] = info.get("targetLowPrice")
-    out["num_analysts"] = info.get("numberOfAnalystOpinions")
-    out["rating"] = info.get("recommendationKey")
     return out

@@ -16,19 +16,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 import pandas as pd
 
 from ...storage.positions import PROJECT_DIR, _find_project_root
-
 
 HISTORY_SUBDIR = "history"
 MIN_PCTILE_SAMPLES = 30  # below this, percentile is reported but flagged thin
 
 
-def history_dir(start: Optional[Path] = None) -> Path:
+def history_dir(start: Path | None = None) -> Path:
     """`.optionslab/history/` under the project root (created on demand)."""
     root = _find_project_root(start) or (start or Path.cwd())
     out = Path(root) / PROJECT_DIR / HISTORY_SUBDIR
@@ -37,8 +34,8 @@ def history_dir(start: Optional[Path] = None) -> Path:
 
 
 def append_snapshot(key: str, value: float, *,
-                    start: Optional[Path] = None,
-                    when: Optional[datetime] = None) -> Path:
+                    start: Path | None = None,
+                    when: datetime | None = None) -> Path:
     """Append a single (timestamp, value) row to history/<key>.csv."""
     when = when or datetime.now()
     path = history_dir(start) / f"{key}.csv"
@@ -51,7 +48,7 @@ def append_snapshot(key: str, value: float, *,
     return path
 
 
-def load_history(key: str, *, start: Optional[Path] = None) -> pd.Series:
+def load_history(key: str, *, start: Path | None = None) -> pd.Series:
     """Load history/<key>.csv as a time-indexed Series, or empty Series."""
     path = history_dir(start) / f"{key}.csv"
     if not path.exists():
@@ -67,7 +64,7 @@ class PercentileResult:
     """A value with its empirical percentile context."""
 
     value: float
-    percentile: Optional[float]      # 0..100, None if not enough data
+    percentile: float | None      # 0..100, None if not enough data
     window_days: int                 # window the percentile was over
     samples: int                     # how many observations contributed
     thin: bool                       # True when samples < MIN_PCTILE_SAMPLES

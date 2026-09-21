@@ -8,13 +8,11 @@ use on a dealer surface.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 
 
-def atm_iv(df: pd.DataFrame, spot: float) -> Optional[float]:
+def atm_iv(df: pd.DataFrame, spot: float) -> float | None:
     """ATM IV (%) by linear interpolation in log-moneyness around K=spot.
 
     Returns None if the chain has fewer than two strikes with usable IV.
@@ -30,7 +28,7 @@ def atm_iv(df: pd.DataFrame, spot: float) -> Optional[float]:
 
 
 def iv_at_delta(df: pd.DataFrame, target_delta: float,
-                option_type: str) -> Optional[float]:
+                option_type: str) -> float | None:
     """IV (%) at exactly `target_delta` by linear interpolation in delta.
 
     `target_delta` is signed conventionally: +0.25 for a 25Δ call,
@@ -54,7 +52,7 @@ def iv_at_delta(df: pd.DataFrame, target_delta: float,
 
 
 def interpolate_term_iv(term: dict[str, float], target_days: int = 30,
-                        now: Optional[pd.Timestamp] = None) -> Optional[float]:
+                        now: pd.Timestamp | None = None) -> float | None:
     """Interpolate the IV curve {expiration: IV%} at `target_days` to expiry.
 
     Linear in days-to-expiry. Returns None if the target is outside the

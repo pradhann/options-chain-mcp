@@ -1,0 +1,33 @@
+{
+ "fetched_at": "2026-09-21T21:37:49+00:00",
+ "requested": [
+  "BZV26.NYM",
+  "BZX26.NYM",
+  "BZZ26.NYM",
+  "BZF27.NYM",
+  "BZG27.NYM",
+  "BZH27.NYM",
+  "BZJ27.NYM",
+  "BZK27.NYM",
+  "BZM27.NYM",
+  "BZN27.NYM",
+  "BZQ27.NYM",
+  "BZU27.NYM",
+  "BZV27.NYM",
+  "BZX27.NYM",
+  "BZZ27.NYM",
+  "BZF28.NYM",
+  "BZG28.NYM",
+  "BZH28.NYM",
+  "BZJ28.NYM",
+  "BZK28.NYM",
+  "BZM28.NYM",
+  "BZN28.NYM",
+  "BZQ28.NYM",
+  "BZU28.NYM",
+  "BZV28.NYM",
+  "BZX28.NYM",
+  "BZZ28.NYM"
+ ],
+ "source": "yfinance daily close (settlement proxy; not the official CME/ICE settlement)"
+}

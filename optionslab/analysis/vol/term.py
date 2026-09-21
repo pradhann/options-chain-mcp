@@ -8,14 +8,11 @@ trade is to stand down or buy convexity. The ratio is the regime knob.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 
-from ...errors import OptionsLabError
 from ...data.vol import vix_curve, vix_history
 from .percentile import PercentileResult, percentile_from_series
-
 
 CONTANGO_THRESHOLD = 1.0       # VIX3M/VIX > 1 → contango
 STRONG_CONTANGO = 1.05
@@ -54,10 +51,10 @@ class TermStructureResult:
 
     asof: str
     curve: dict[str, float]                 # {VIX9D, VIX, VIX3M, VIX6M}
-    ratio_vix3m_over_vix: Optional[float]
+    ratio_vix3m_over_vix: float | None
     regime: str
     action: str
-    percentile_2y: Optional[PercentileResult]
+    percentile_2y: PercentileResult | None
 
     def to_dict(self) -> dict:
         return {
@@ -80,7 +77,7 @@ def term_structure() -> TermStructureResult:
     vix3m = curve.get("VIX3M")
     ratio = (vix3m / vix) if (vix and vix3m) else None
 
-    pct: Optional[PercentileResult] = None
+    pct: PercentileResult | None = None
     if ratio is not None:
         try:
             hist = vix_history(("VIX", "VIX3M"), lookback_days=750)

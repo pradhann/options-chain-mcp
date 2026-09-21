@@ -17,7 +17,6 @@ from ..core.results import GreeksResult, ValueResult
 from ..pricing import bs_greeks, bs_price, year_fraction
 from ._ivs import IvSpec, resolve_ivs
 
-
 CONTRACT_SIZE = 100
 
 
@@ -47,7 +46,7 @@ def value(
 
     leg_values: list[float] = []
     leg_pnls: list[float] = []
-    for lg, iv in zip(position.legs, ivs_used):
+    for lg, iv in zip(position.legs, ivs_used, strict=True):
         T = _leg_T(lg, market)
         price = float(bs_price(
             market.spot, lg.strike, T, market.r, iv, lg.option_type, market.q
@@ -87,7 +86,7 @@ def greeks(
     keys = ("delta", "gamma", "theta", "vega", "rho")
     totals = {k: 0.0 for k in keys}
     per_leg: list[dict] = []
-    for i, (lg, iv) in enumerate(zip(position.legs, ivs_used)):
+    for i, (lg, iv) in enumerate(zip(position.legs, ivs_used, strict=True)):
         T = _leg_T(lg, market)
         g = bs_greeks(market.spot, lg.strike, T, market.r, iv,
                       lg.option_type, market.q)

@@ -19,18 +19,17 @@ Time is ACT/365.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, Union
 
 import numpy as np
 from scipy.optimize import brentq
 from scipy.stats import norm
 
-ArrayLike = Union[float, int, np.ndarray]
+ArrayLike = float | int | np.ndarray
 
 _SECONDS_PER_YEAR = 365.0 * 24.0 * 3600.0
 
 
-def year_fraction(expiration: str, now: Optional[datetime] = None) -> float:
+def year_fraction(expiration: str, now: datetime | None = None) -> float:
     """Years from `now` to an expiration date 'YYYY-MM-DD' (ACT/365).
 
     Options stop trading at the close; we anchor expiry to 16:00 local on
@@ -161,7 +160,7 @@ def bs_greeks(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float,
 
 def implied_vol(price: float, S: float, K: float, T: float, r: float,
                 option_type: str, q: float = 0.0,
-                lo: float = 1e-4, hi: float = 5.0) -> Optional[float]:
+                lo: float = 1e-4, hi: float = 5.0) -> float | None:
     """Solve BS for sigma given a market price (Brent root-find).
 
     Returns None when the price is outside no-arbitrage bounds (no IV

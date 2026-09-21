@@ -7,8 +7,6 @@ reference at a glance.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
@@ -21,9 +19,9 @@ from .style import apply_style, save_if_requested
 def plot_pnl_grid(
     result: ScenarioResult,
     *,
-    title: Optional[str] = None,
-    ax: Optional[Axes] = None,
-    save_path: Optional[str] = None,
+    title: str | None = None,
+    ax: Axes | None = None,
+    save_path: str | None = None,
 ) -> Axes:
     """Render a `ScenarioResult` as a diverging heatmap with cell labels.
 

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "optionslab"
-version = "0.1.0"
-description = "Options analytics for traders and learners — CLI and MCP server in one package."
+version = "0.2.0"
+description = "Options and energy-market analytics that refuse to make up numbers: every value sourced, timestamped, and quality-flagged. CLI + MCP server."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"

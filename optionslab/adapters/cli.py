@@ -26,10 +26,10 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from typing import Optional
 
 from ..core.market import MarketContext
 from ..core.position import Position
+from ..data.quotes import get_risk_free_rate
 from ..errors import OptionsLabError
 from ..storage.positions import (
     delete_position,
@@ -38,10 +38,19 @@ from ..storage.positions import (
     positions_path,
     save_position,
 )
-
+from .cli_feeds import add_parsers as add_feed_parsers
 
 WELCOME = """\
 optionslab — options analytics toolkit.
+
+Sourced data (every number carries asof/source; unsourced lines say so)
+  optionslab pretrade SU 2027-03-19 --order '{"symbol":"SU","instrument":"stock","side":"long","qty":100}'
+  optionslab plot sheet SU 2027-03-19     # the one-page chart sheet -> .optionslab/charts/
+  optionslab refresh-all                 # snapshot every feed (run 15:45 ET)
+  optionslab weekly-check                # the Sunday read
+  optionslab ledger open|close|marks|review
+  optionslab feed cracks | feed cot CL | feed sweep VLO | feed eia distillate_stocks PADD1
+  OPTIONSLAB_OFFLINE=1 optionslab pretrade ...   # snapshots only, no network
 
 Position analysis
   optionslab chain --ticker SPY
@@ -90,9 +99,10 @@ def _build_position(args: argparse.Namespace) -> Position:
 
 def _market_from_args(args: argparse.Namespace) -> MarketContext:
     """Build a MarketContext from CLI args (--spot / --r / --q)."""
+    r = getattr(args, "r", None)
     return MarketContext.explicit(
         spot=getattr(args, "spot", None),
-        r=getattr(args, "r", None) if getattr(args, "r", None) is not None else 0.045,
+        r=r if r is not None else get_risk_free_rate(),
         q=getattr(args, "q", 0.0),
     )
 
@@ -114,7 +124,7 @@ def _add_market_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--spot", type=float, required=True,
                         help="Underlying spot price")
     parser.add_argument("--r", type=float, default=None,
-                        help="Risk-free rate decimal (default 0.045)")
+                        help="Risk-free rate decimal (default: live 13-week T-bill)")
     parser.add_argument("--q", type=float, default=0.0,
                         help="Dividend yield decimal (default 0)")
     parser.add_argument("--sigma", type=float, default=None,
@@ -125,8 +135,8 @@ def _add_market_args(parser: argparse.ArgumentParser) -> None:
 # ---------- commands ----------
 
 def cmd_chain(args: argparse.Namespace) -> None:
-    from ..data.chain import filter_near_money, load_chain, PRINT_COLUMNS
-    import pandas as pd
+
+    from ..data.chain import PRINT_COLUMNS, filter_near_money, load_chain
 
     chain = load_chain(args.ticker, expiration=args.expiration,
                        exp_index=args.exp_index)
@@ -186,6 +196,7 @@ def cmd_scenario(args: argparse.Namespace) -> None:
     _print(result)
     if args.plot or args.save_plot:
         import matplotlib.pyplot as plt
+
         from ..plotting.scenario import plot_pnl_grid
         plot_pnl_grid(result, save_path=args.save_plot)
         if args.plot:
@@ -215,7 +226,7 @@ def cmd_chart(args: argparse.Namespace) -> None:
         from ..pricing import year_fraction
         T = (year_fraction(args.expiration) if args.expiration
              else args.days / 365.0)
-        r = args.r if args.r is not None else 0.045
+        r = args.r if args.r is not None else get_risk_free_rate()
         plot_greek_vs_spot(args.strike, T, r, args.sigma, args.type, args.q,
                            greek=args.greek, overlay_oracle=args.verify,
                            save_path=args.save_plot)
@@ -273,7 +284,6 @@ def cmd_chart(args: argparse.Namespace) -> None:
                         wing_boost_pct=20.0)
         plot_vix_strip_overlay(res, save_path=args.save_plot)
     elif kind == "greek-time":
-        from ..data.quotes import get_risk_free_rate
         from ..plotting.greek import plot_greek_vs_time
         r = args.r if args.r is not None else get_risk_free_rate()
         spot = args.spot if args.spot is not None else args.strike
@@ -324,31 +334,21 @@ def cmd_positions(args: argparse.Namespace) -> None:
 
 def cmd_data(args: argparse.Namespace) -> None:
     op = args.op
-    if op == "realized-vol":
-        from ..data.vol import realized_vol
-        print(json.dumps({"ticker": args.ticker.upper(),
-                          "window_days": args.window,
-                          "realized_vol_pct": realized_vol(args.ticker, args.window)},
-                         indent=2))
-    elif op == "iv-term":
+    if op == "iv-term":
         from ..data.vol import iv_term_structure
         print(json.dumps(iv_term_structure(args.ticker, args.max),
                          indent=2))
     elif op == "earnings":
-        from ..data.events import next_earnings
-        from ..data.quotes import make_ticker
-        print(json.dumps(next_earnings(make_ticker(args.ticker)),
-                         indent=2, default=str))
+        from ..feeds.calendar import next_earnings
+        _print(next_earnings(args.ticker))
     elif op == "news":
         from ..data.events import recent_news
         from ..data.quotes import make_ticker
         print(json.dumps(recent_news(make_ticker(args.ticker), args.n),
                          indent=2))
     elif op == "targets":
-        from ..data.events import analyst_targets
-        from ..data.quotes import make_ticker
-        print(json.dumps(analyst_targets(make_ticker(args.ticker)),
-                         indent=2, default=str))
+        from ..feeds.fundamentals import analyst_targets
+        _print(analyst_targets(args.ticker))
     else:
         raise OptionsLabError(f"unknown data op {op!r}")
 
@@ -356,31 +356,9 @@ def cmd_data(args: argparse.Namespace) -> None:
 # ---------- Week 3 commands ----------
 
 def cmd_rv(args: argparse.Namespace) -> None:
-    """Realized volatility: single value or full estimator zoo."""
-    from ..data.vol import (
-        ESTIMATORS, realized_vol, realized_vol_all_estimators,
-    )
-    if args.all:
-        df = realized_vol_all_estimators(args.ticker, args.window,
-                                         lookback_days=args.lookback)
-        latest = df.iloc[-1].to_dict()
-        print(json.dumps({
-            "ticker": args.ticker.upper(),
-            "window_days": args.window,
-            "latest_pct_by_estimator": {k: round(v, 3) for k, v in latest.items()},
-        }, indent=2))
-    else:
-        if args.estimator not in ESTIMATORS:
-            raise OptionsLabError(
-                f"--estimator must be one of {ESTIMATORS}, got {args.estimator!r}"
-            )
-        v = realized_vol(args.ticker, args.window, estimator=args.estimator)
-        print(json.dumps({
-            "ticker": args.ticker.upper(),
-            "estimator": args.estimator,
-            "window_days": args.window,
-            "realized_vol_pct": v,
-        }, indent=2))
+    """Realized vol: five estimators x 21/63/126 sessions, worst cells named."""
+    from ..feeds.bars import rv_matrix
+    _print(rv_matrix(args.ticker))
 
 
 def cmd_vrp(args: argparse.Namespace) -> None:
@@ -448,9 +426,14 @@ def cmd_parity(args: argparse.Namespace) -> None:
 def cmd_synthetic(args: argparse.Namespace) -> None:
     """W1.D6: build a canonical synthetic and verify against the target."""
     from ..analysis.synthetics import (
-        long_stock_payoff, short_stock_payoff,
-        synthetic_long_call, synthetic_long_put, synthetic_long_stock,
-        synthetic_short_call, synthetic_short_put, synthetic_short_stock,
+        long_stock_payoff,
+        short_stock_payoff,
+        synthetic_long_call,
+        synthetic_long_put,
+        synthetic_long_stock,
+        synthetic_short_call,
+        synthetic_short_put,
+        synthetic_short_stock,
         verify_synthetic,
     )
     K = args.strike
@@ -618,9 +601,6 @@ def build_parser() -> argparse.ArgumentParser:
     # data
     da = sub.add_parser("data", help="miscellaneous live data fetchers")
     da_sub = da.add_subparsers(dest="op", required=True)
-    da_rv = da_sub.add_parser("realized-vol")
-    da_rv.add_argument("--ticker", required=True)
-    da_rv.add_argument("--window", type=int, default=30)
     da_iv = da_sub.add_parser("iv-term")
     da_iv.add_argument("--ticker", required=True)
     da_iv.add_argument("--max", type=int, default=12)
@@ -635,13 +615,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     # ---------- Week 3 ----------
 
-    rv = sub.add_parser("rv", help="annualized realized vol (estimator zoo)")
+    rv = sub.add_parser("rv", help="realized vol matrix (5 estimators x 3 windows)")
     rv.add_argument("--ticker", required=True)
-    rv.add_argument("--window", type=int, default=21)
-    rv.add_argument("--estimator", default="close_to_close")
-    rv.add_argument("--lookback", type=int, default=1260)
-    rv.add_argument("--all", action="store_true",
-                    help="report all five estimators side-by-side")
     rv.set_defaults(func=cmd_rv)
 
     vrp = sub.add_parser("vrp", help="variance risk premium (today or history)")
@@ -728,10 +703,11 @@ def build_parser() -> argparse.ArgumentParser:
     it = sub.add_parser("interactive", help="conversational shell")
     it.set_defaults(func=cmd_interactive)
 
+    add_feed_parsers(sub)
     return p
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     if args.command is None:

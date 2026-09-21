@@ -15,14 +15,9 @@ a calendar (treated as same-T here), or a custom 7-leg structure.
 
 from __future__ import annotations
 
-from typing import Iterable
-
-import numpy as np
-
 from ..core.position import Position
 from ..core.results import MetricsResult
 from .payoff import _leg_payoff
-
 
 CONTRACT_SIZE = 100
 
@@ -92,9 +87,8 @@ def position_metrics(position: Position) -> MetricsResult:
 
     # Breakevens: zero crossings on every segment.
     breakevens: list[float] = []
-    for (sa, pa), (sb, pb) in zip(
-        zip(eval_pts, payoffs), zip(eval_pts[1:], payoffs[1:])
-    ):
+    points = list(zip(eval_pts, payoffs, strict=True))
+    for (sa, pa), (sb, pb) in zip(points, points[1:], strict=False):
         z = _zero_crossing(sa, pa, sb, pb)
         if z is not None and (not breakevens or abs(z - breakevens[-1]) > 1e-6):
             breakevens.append(round(z, 4))

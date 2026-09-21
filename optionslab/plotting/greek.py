@@ -7,15 +7,12 @@ markers so the analytic curve can be visibly cross-checked.
 
 from __future__ import annotations
 
-from typing import Optional
-
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-import matplotlib.pyplot as plt
 
 from ..pricing import bs_greeks
 from .style import CALL_COLOR, PUT_COLOR, SPOT_COLOR, apply_style, dollar_axis, save_if_requested
-
 
 _GREEK_LABEL = {
     "delta": ("Delta", "per +$1 spot"),
@@ -53,11 +50,11 @@ def plot_greek_vs_spot(
     q: float = 0.0,
     *,
     greek: str = "delta",
-    s_range: Optional[tuple[float, float]] = None,
+    s_range: tuple[float, float] | None = None,
     points: int = 200,
     overlay_oracle: bool = False,
-    ax: Optional[Axes] = None,
-    save_path: Optional[str] = None,
+    ax: Axes | None = None,
+    save_path: str | None = None,
 ) -> Axes:
     """A Greek as a function of spot, for fixed K, T, r, σ, q."""
     greek = greek.lower()
@@ -132,11 +129,10 @@ def plot_greek_vs_time(
     q: float = 0.0,
     *,
     greek: str = "gamma",
-    t_range_days: Optional[tuple[float, float]] = None,
+    t_range_days: tuple[float, float] | None = None,
     points: int = 200,
-    overlay_oracle: bool = False,
-    ax: Optional[Axes] = None,
-    save_path: Optional[str] = None,
+    ax: Axes | None = None,
+    save_path: str | None = None,
 ) -> Axes:
     """A Greek as a function of time to expiry, for fixed S, K, r, σ, q.
 
@@ -171,16 +167,6 @@ def plot_greek_vs_time(
         ax.plot(days, y, color=color, linewidth=2,
                 label=f"{option_type.capitalize()} {greek}")
         ax.axhline(0, color="gray", linewidth=0.6, alpha=0.5)
-
-        if overlay_oracle:
-            step = max(1, points // 20)
-            oracle = _pyvollib_oracle(greek,
-                                      np.full_like(days[::step], spot),
-                                      strike, T[::step].mean(), r, sigma,
-                                      option_type, q)
-            # py_vollib oracle holds T fixed; we don't try to overlay it
-            # for time-axis charts since the comparison is pointwise in T.
-            # Skip the overlay quietly.
 
         ax.set_xlabel("Days to expiration")
         ax.set_ylabel(f"{label}  ({conv})")

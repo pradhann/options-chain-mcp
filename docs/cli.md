@@ -50,7 +50,7 @@ The `greeks` verb returns vanna, vomma, and charm alongside the five canonical o
 
 | Verb | What it gives you |
 |---|---|
-| `rv --ticker SPY --all` | all five RV estimators side-by-side |
+| `rv --ticker SPY` | RV matrix: five estimators x 21/63/126 sessions, worst cells named |
 | `vrp` | today's VRP + 2-year percentile + interpretation |
 | `vrp --history --years 15` | summary stats over a long window |
 | `term-structure` | VIX-family curve + ratio + regime label |
@@ -59,15 +59,24 @@ The `greeks` verb returns vanna, vomma, and charm alongside the five canonical o
 | `event-vol --ticker NVDA --front-exp ... --back-exp ...` | event-implied 1-day move |
 | `dashboard` | the daily Vol Dashboard — all five fields in one read |
 
+## Sourced data (see [Data feeds](feeds.md))
+
+| Verb | What it gives you |
+|---|---|
+| `pretrade SU 2027-03-19 [--order JSON] [--json]` | the one-call pre-trade page |
+| `refresh-all [--tickers ...]` | snapshot every feed (run 15:45 ET) |
+| `weekly-check` | the Sunday read with alerts |
+| `ledger open\|close\|marks\|review` | append-only ledger, marks, delta-notional |
+| `feed <name> [args]` | any single feed as a JSON envelope (`feed --help` lists them) |
+
 ## Data fetchers
 
 | Verb | What it gives you |
 |---|---|
-| `data realized-vol --ticker SPY` | single RV reading |
 | `data iv-term --ticker SPY` | ATM IV by expiration |
-| `data earnings --ticker NVDA` | next earnings + EPS/rev estimates |
+| `data earnings --ticker NVDA` | next earnings, `verified` only when two sources agree |
 | `data news --ticker OXY` | recent headlines |
-| `data targets --ticker SPY` | analyst price-target consensus |
+| `data targets --ticker SPY` | analyst target count and range (staleness only, no mean) |
 
 ## Charts (unified dispatcher)
 
