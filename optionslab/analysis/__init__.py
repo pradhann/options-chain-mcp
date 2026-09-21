@@ -11,7 +11,6 @@ Every public function returns a typed result with `.to_dict()`.
 """
 
 from . import vol
-from .curriculum import option_payoff, portfolio_payoff, position_delta
 from .metrics import position_metrics
 from .parity import ParityResult, parity_check
 from .payoff import expiration_payoff
@@ -34,8 +33,6 @@ __all__ = [
     # canonical
     "expiration_payoff", "position_metrics", "value", "greeks",
     "theoretical_price", "scenario_grid",
-    # syllabus-named convenience
-    "option_payoff", "portfolio_payoff", "position_delta",
     # W1.D5 + W1.D6
     "parity_check", "ParityResult",
     "verify_synthetic", "SyntheticVerifyResult",

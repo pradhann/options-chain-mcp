@@ -38,3 +38,14 @@ def market_atm() -> MarketContext:
         spot=100.0, r=0.045, q=0.0,
         asof=datetime(2026, 6, 5, 12, 0, 0),
     )
+
+
+@pytest.fixture
+def offline_home(tmp_path, monkeypatch):
+    """An isolated `.optionslab` root with the network switched off."""
+    root = tmp_path / ".optionslab"
+    root.mkdir()
+    monkeypatch.setenv("OPTIONSLAB_HOME", str(root))
+    monkeypatch.setenv("OPTIONSLAB_OFFLINE", "1")
+    monkeypatch.delenv("OPTIONSLAB_ASOF", raising=False)
+    return root

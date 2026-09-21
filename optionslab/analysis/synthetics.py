@@ -23,8 +23,8 @@ exactly what parity prices).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 
@@ -32,7 +32,6 @@ from ..core.leg import Leg
 from ..core.position import Position
 from ..errors import OptionsLabError
 from .payoff import expiration_payoff
-
 
 PayoffFn = Callable[[np.ndarray], np.ndarray]
 
@@ -52,7 +51,7 @@ def short_stock_payoff(S_ref: float) -> PayoffFn:
 # ---------- the six canonical synthetics ----------
 
 def synthetic_long_stock(strike: float, call_premium: float, put_premium: float,
-                         expiration: Optional[str] = None) -> Position:
+                         expiration: str | None = None) -> Position:
     """Long call + short put at the same K: replicates +1 share unit."""
     return Position.from_legs([
         Leg("long",  "call", strike, call_premium, 1, expiration),
@@ -61,7 +60,7 @@ def synthetic_long_stock(strike: float, call_premium: float, put_premium: float,
 
 
 def synthetic_short_stock(strike: float, call_premium: float, put_premium: float,
-                          expiration: Optional[str] = None) -> Position:
+                          expiration: str | None = None) -> Position:
     """Short call + long put at the same K: replicates −1 share unit."""
     return Position.from_legs([
         Leg("short", "call", strike, call_premium, 1, expiration),
@@ -70,7 +69,7 @@ def synthetic_short_stock(strike: float, call_premium: float, put_premium: float
 
 
 def synthetic_long_call(strike: float, put_premium: float,
-                        expiration: Optional[str] = None) -> Position:
+                        expiration: str | None = None) -> Position:
     """Long stock + long put: replicates a long call. Stock leg is virtual."""
     return Position.from_legs([
         Leg("long", "put", strike, put_premium, 1, expiration),
@@ -78,7 +77,7 @@ def synthetic_long_call(strike: float, put_premium: float,
 
 
 def synthetic_short_call(strike: float, put_premium: float,
-                         expiration: Optional[str] = None) -> Position:
+                         expiration: str | None = None) -> Position:
     """Short stock + short put: replicates a short call."""
     return Position.from_legs([
         Leg("short", "put", strike, put_premium, 1, expiration),
@@ -86,7 +85,7 @@ def synthetic_short_call(strike: float, put_premium: float,
 
 
 def synthetic_long_put(strike: float, call_premium: float,
-                       expiration: Optional[str] = None) -> Position:
+                       expiration: str | None = None) -> Position:
     """Short stock + long call: replicates a long put."""
     return Position.from_legs([
         Leg("long", "call", strike, call_premium, 1, expiration),
@@ -94,7 +93,7 @@ def synthetic_long_put(strike: float, call_premium: float,
 
 
 def synthetic_short_put(strike: float, call_premium: float,
-                        expiration: Optional[str] = None) -> Position:
+                        expiration: str | None = None) -> Position:
     """Long stock + short call: replicates a short put (covered call)."""
     return Position.from_legs([
         Leg("short", "call", strike, call_premium, 1, expiration),
@@ -131,7 +130,7 @@ class SyntheticVerifyResult:
 
 
 def verify_synthetic(
-    target: Union[Position, PayoffFn],
+    target: Position | PayoffFn,
     synthetic: Position,
     *,
     s_range: tuple[float, float],

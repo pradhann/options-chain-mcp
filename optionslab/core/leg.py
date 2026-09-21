@@ -7,9 +7,8 @@ once built a Leg is immutable and trustable downstream.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
-from typing import Iterable, Optional
-
+from collections.abc import Iterable
+from dataclasses import dataclass
 
 _SIDES = ("long", "short")
 _TYPES = ("call", "put")
@@ -44,7 +43,7 @@ class Leg:
     strike: float
     premium: float = 0.0
     qty: int = 1
-    expiration: Optional[str] = None
+    expiration: str | None = None
 
     def __post_init__(self) -> None:
         if self.side not in _SIDES:
@@ -71,10 +70,6 @@ class Leg:
     def is_call(self) -> bool:
         return self.option_type == "call"
 
-    def with_(self, **changes) -> "Leg":
-        """Return a copy with the named fields replaced (re-validated)."""
-        return replace(self, **changes)
-
     # ---- (de)serialization ----
 
     def to_dict(self) -> dict:
@@ -88,7 +83,7 @@ class Leg:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Leg":
+    def from_dict(cls, d: dict) -> Leg:
         """Build a Leg from a plain dict (MCP/JSON/file entry point).
 
         Unknown keys are ignored — the dict may carry extra annotation

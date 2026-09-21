@@ -54,6 +54,7 @@ nav:
   - Home: index.md
   - Quick start: quickstart.md
   - CLI reference: cli.md
+  - Data feeds: feeds.md
   - MCP tools: mcp.md
   - Concepts:
     - concepts/index.md

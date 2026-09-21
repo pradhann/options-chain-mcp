@@ -19,17 +19,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 from ..core.position import Position
-
 
 PROJECT_DIR = ".optionslab"
 POSITIONS_FILE = "positions.json"
 SCHEMA_VERSION = 1
 
 
-def _find_project_root(start: Optional[Path] = None) -> Optional[Path]:
+def _find_project_root(start: Path | None = None) -> Path | None:
     """Search up from `start` (default cwd) for an existing .optionslab dir."""
     here = (start or Path.cwd()).resolve()
     for parent in [here, *here.parents]:
@@ -38,7 +36,7 @@ def _find_project_root(start: Optional[Path] = None) -> Optional[Path]:
     return None
 
 
-def positions_path(start: Optional[Path] = None) -> Path:
+def positions_path(start: Path | None = None) -> Path:
     """Return the path the positions file would (or does) live at.
 
     If a project root exists, use it; otherwise default to cwd.
@@ -67,12 +65,12 @@ def _write(path: Path, data: dict) -> None:
         f.write("\n")
 
 
-def list_positions(*, start: Optional[Path] = None) -> list[str]:
+def list_positions(*, start: Path | None = None) -> list[str]:
     """Names of every saved position."""
     return sorted(_read(positions_path(start))["positions"].keys())
 
 
-def get_position(name: str, *, start: Optional[Path] = None) -> Position:
+def get_position(name: str, *, start: Path | None = None) -> Position:
     """Load one saved position by name."""
     data = _read(positions_path(start))
     if name not in data["positions"]:
@@ -81,8 +79,8 @@ def get_position(name: str, *, start: Optional[Path] = None) -> Position:
 
 
 def save_position(position: Position, *,
-                  name: Optional[str] = None,
-                  start: Optional[Path] = None) -> Path:
+                  name: str | None = None,
+                  start: Path | None = None) -> Path:
     """Save a position (overwriting any existing entry).
 
     `name` overrides position.name; one of them must be set.
@@ -99,7 +97,7 @@ def save_position(position: Position, *,
     return path
 
 
-def delete_position(name: str, *, start: Optional[Path] = None) -> bool:
+def delete_position(name: str, *, start: Path | None = None) -> bool:
     """Remove a saved position by name. Returns True if it existed."""
     path = positions_path(start)
     data = _read(path)
@@ -111,9 +109,9 @@ def delete_position(name: str, *, start: Optional[Path] = None) -> bool:
 
 
 def resolve_position_spec(*,
-                          name: Optional[str] = None,
-                          json_str: Optional[str] = None,
-                          start: Optional[Path] = None) -> Position:
+                          name: str | None = None,
+                          json_str: str | None = None,
+                          start: Path | None = None) -> Position:
     """Build a Position from one of: stored `name`, inline JSON.
 
     Exactly one source must be provided. Used by adapters so every CLI

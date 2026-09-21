@@ -23,106 +23,13 @@ yang_zhang−c2c means overnight gap risk.
 
 from __future__ import annotations
 
-from typing import Optional
-
-import numpy as np
 import pandas as pd
 import yfinance as yf
 
 from ..errors import OptionsLabError
+from ..estimators import ESTIMATOR_FUNCTIONS, ESTIMATORS
 from .chain import load_chain
 from .quotes import make_ticker
-
-
-TRADING_DAYS = 252
-
-
-ESTIMATORS = (
-    "close_to_close",
-    "parkinson",
-    "garman_klass",
-    "rogers_satchell",
-    "yang_zhang",
-)
-
-
-# ---------- per-estimator vectorized formulas (rolling-window safe) ----------
-
-def _log_returns(closes: pd.Series) -> pd.Series:
-    return np.log(closes / closes.shift(1))
-
-
-def _rv_close_to_close(ohlc: pd.DataFrame, window: int) -> pd.Series:
-    """σ_annual = std(log returns) · √252."""
-    r = _log_returns(ohlc["Close"])
-    return r.rolling(window).std(ddof=1) * np.sqrt(TRADING_DAYS)
-
-
-def _rv_parkinson(ohlc: pd.DataFrame, window: int) -> pd.Series:
-    """Parkinson 1980: 1/(4 ln 2) · mean(ln(H/L)²)."""
-    hl = np.log(ohlc["High"] / ohlc["Low"]) ** 2
-    var = hl.rolling(window).mean() / (4 * np.log(2))
-    return np.sqrt(var * TRADING_DAYS)
-
-
-def _rv_garman_klass(ohlc: pd.DataFrame, window: int) -> pd.Series:
-    """Garman-Klass 1980 — uses OHLC, no gap assumption."""
-    hl = np.log(ohlc["High"] / ohlc["Low"]) ** 2
-    co = np.log(ohlc["Close"] / ohlc["Open"]) ** 2
-    daily = 0.5 * hl - (2 * np.log(2) - 1) * co
-    var = daily.rolling(window).mean()
-    return np.sqrt(var * TRADING_DAYS)
-
-
-def _rv_rogers_satchell(ohlc: pd.DataFrame, window: int) -> pd.Series:
-    """Rogers-Satchell 1991 — drift-robust OHLC estimator."""
-    ho = np.log(ohlc["High"] / ohlc["Open"])
-    hc = np.log(ohlc["High"] / ohlc["Close"])
-    lo = np.log(ohlc["Low"] / ohlc["Open"])
-    lc = np.log(ohlc["Low"] / ohlc["Close"])
-    daily = ho * hc + lo * lc
-    var = daily.rolling(window).mean()
-    return np.sqrt(var * TRADING_DAYS)
-
-
-def _rv_yang_zhang(ohlc: pd.DataFrame, window: int) -> pd.Series:
-    """Yang-Zhang 2000 — handles overnight gaps + opening drift + RS.
-
-    Variance = σ²_overnight + k·σ²_open_to_close + (1-k)·σ²_rogers_satchell
-    with k chosen to minimize variance of the estimator (Yang-Zhang's formula
-    using N=window).
-    """
-    o = ohlc["Open"]
-    c = ohlc["Close"]
-    prev_c = c.shift(1)
-    overnight = np.log(o / prev_c) ** 2
-    open_to_close = np.log(c / o) ** 2
-
-    # k: tuning constant from the paper.
-    k = 0.34 / (1.34 + (window + 1) / (window - 1)) if window > 1 else 0.34
-
-    sigma_overnight = overnight.rolling(window).mean()
-    sigma_otc = open_to_close.rolling(window).mean()
-    # RS component (already daily-variance terms, no sqrt yet)
-    ho = np.log(ohlc["High"] / ohlc["Open"])
-    hc = np.log(ohlc["High"] / ohlc["Close"])
-    lo = np.log(ohlc["Low"] / ohlc["Open"])
-    lc = np.log(ohlc["Low"] / ohlc["Close"])
-    rs_daily = ho * hc + lo * lc
-    sigma_rs = rs_daily.rolling(window).mean()
-
-    var = sigma_overnight + k * sigma_otc + (1 - k) * sigma_rs
-    return np.sqrt(var * TRADING_DAYS)
-
-
-_ESTIMATOR_FN = {
-    "close_to_close": _rv_close_to_close,
-    "parkinson":      _rv_parkinson,
-    "garman_klass":   _rv_garman_klass,
-    "rogers_satchell": _rv_rogers_satchell,
-    "yang_zhang":     _rv_yang_zhang,
-}
-
 
 # ---------- public API ----------
 
@@ -139,28 +46,6 @@ def _fetch_history(symbol: str, lookback_days: int) -> pd.DataFrame:
     return hist
 
 
-def realized_vol(
-    symbol: str,
-    window_days: int = 21,
-    estimator: str = "close_to_close",
-) -> float:
-    """Annualized realized vol (%) for the most recent `window_days`.
-
-    `estimator` ∈ ESTIMATORS. Default close_to_close matches the legacy
-    behavior and is the safest default for general use.
-    """
-    if estimator not in _ESTIMATOR_FN:
-        raise ValueError(f"estimator must be one of {ESTIMATORS}, got {estimator!r}")
-    if window_days < 2:
-        raise ValueError("window_days must be >= 2")
-    hist = _fetch_history(symbol, window_days)
-    series = _ESTIMATOR_FN[estimator](hist, window_days)
-    last = series.dropna().iloc[-1] if not series.dropna().empty else None
-    if last is None or not np.isfinite(last):
-        raise OptionsLabError(f"Could not compute {estimator} RV for {symbol}")
-    return round(float(last * 100), 2)
-
-
 def realized_vol_series(
     symbol: str,
     window_days: int = 21,
@@ -168,10 +53,10 @@ def realized_vol_series(
     lookback_days: int = 1260,    # ~5 years of trading days
 ) -> pd.Series:
     """Time series of annualized RV (%) for plotting and percentiles."""
-    if estimator not in _ESTIMATOR_FN:
+    if estimator not in ESTIMATOR_FUNCTIONS:
         raise ValueError(f"estimator must be one of {ESTIMATORS}, got {estimator!r}")
     hist = _fetch_history(symbol, lookback_days)
-    series = _ESTIMATOR_FN[estimator](hist, window_days) * 100
+    series = ESTIMATOR_FUNCTIONS[estimator](hist, window_days) * 100
     return series.dropna().rename(f"RV_{estimator}_{window_days}d")
 
 
@@ -183,7 +68,7 @@ def realized_vol_all_estimators(
     """All five estimators side-by-side. Columns = estimator names (annual %)."""
     hist = _fetch_history(symbol, lookback_days)
     out = pd.DataFrame({
-        est: _ESTIMATOR_FN[est](hist, window_days) * 100
+        est: ESTIMATOR_FUNCTIONS[est](hist, window_days) * 100
         for est in ESTIMATORS
     })
     return out.dropna(how="all")
@@ -199,7 +84,7 @@ VIX_TICKERS = {
 }
 
 
-def vix_curve(date: Optional[str] = None) -> dict[str, float]:
+def vix_curve(date: str | None = None) -> dict[str, float]:
     """Today's VIX-family snapshot: {VIX9D, VIX, VIX3M, VIX6M}.
 
     Missing tickers (data feed gaps) come back as None rather than

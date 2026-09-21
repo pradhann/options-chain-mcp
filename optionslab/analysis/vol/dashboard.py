@@ -18,11 +18,10 @@ yfinance can be patchy; override with `skew_symbol=`.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 
-from ...data.vol import iv_term_structure, realized_vol_series, vix_curve
+from ...data.vol import iv_term_structure
 from .atm import interpolate_term_iv
 from .percentile import (
     PercentileResult,
@@ -40,13 +39,13 @@ class DashboardResult:
     """The structured Vol Dashboard read."""
 
     asof: str
-    atm_iv_pct: Optional[float]
-    atm_iv_percentile_2y: Optional[PercentileResult]
-    vrp: Optional[VrpTodayResult]
-    term: Optional[TermStructureResult]
-    skew: Optional[SkewResult]
-    yesterdays_call: Optional[str]
-    vol_view: Optional[str]
+    atm_iv_pct: float | None
+    atm_iv_percentile_2y: PercentileResult | None
+    vrp: VrpTodayResult | None
+    term: TermStructureResult | None
+    skew: SkewResult | None
+    yesterdays_call: str | None
+    vol_view: str | None
 
     def to_dict(self) -> dict:
         return {
@@ -69,8 +68,8 @@ class DashboardResult:
         }
 
 
-def _atm_iv_30d_with_percentile(symbol: str = "^VIX") -> tuple[Optional[float],
-                                                                Optional[PercentileResult]]:
+def _atm_iv_30d_with_percentile(symbol: str = "^VIX") -> tuple[float | None,
+                                                                PercentileResult | None]:
     """For SPX/SPY we use VIX as 30-day ATM IV; for others, interpolate term.
 
     The 2y percentile comes from VIX history (yfinance has it) when we're
@@ -111,8 +110,8 @@ def vol_dashboard(
     skew_symbol: str = "SPY",
     skew_exp_index: int = 4,
     save_history: bool = True,
-    yesterdays_call: Optional[str] = None,
-    vol_view: Optional[str] = None,
+    yesterdays_call: str | None = None,
+    vol_view: str | None = None,
 ) -> DashboardResult:
     """Assemble the full Vol Dashboard read.
 

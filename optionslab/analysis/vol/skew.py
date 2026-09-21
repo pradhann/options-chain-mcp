@@ -17,12 +17,10 @@ two-year percentile builds from your own daily runs.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import pandas as pd
 
 from ...data.chain import load_chain
-from ...errors import OptionsLabError
 from .atm import atm_iv, iv_at_delta
 from .percentile import (
     PercentileResult,
@@ -40,13 +38,13 @@ class SkewResult:
     symbol: str
     expiration: str
     spot: float
-    atm_iv_pct: Optional[float]
-    iv_25d_call_pct: Optional[float]
-    iv_25d_put_pct: Optional[float]
-    risk_reversal_pct: Optional[float]
-    butterfly_pct: Optional[float]
-    rr_percentile: Optional[PercentileResult]
-    bf_percentile: Optional[PercentileResult]
+    atm_iv_pct: float | None
+    iv_25d_call_pct: float | None
+    iv_25d_put_pct: float | None
+    risk_reversal_pct: float | None
+    butterfly_pct: float | None
+    rr_percentile: PercentileResult | None
+    bf_percentile: PercentileResult | None
 
     def to_dict(self) -> dict:
         return {
@@ -74,8 +72,8 @@ class SkewResult:
 def skew_metrics(
     symbol: str,
     *,
-    expiration: Optional[str] = None,
-    exp_index: Optional[int] = None,
+    expiration: str | None = None,
+    exp_index: int | None = None,
     save_history: bool = False,
 ) -> SkewResult:
     """Compute 25Δ RR + 25Δ BF + ATM IV for one expiration.
@@ -106,8 +104,8 @@ def skew_metrics(
 
     # Persist and read percentiles from local history.
     key_base = f"skew_{symbol.upper()}_{ch.expiration}"
-    rr_pct: Optional[PercentileResult] = None
-    bf_pct: Optional[PercentileResult] = None
+    rr_pct: PercentileResult | None = None
+    bf_pct: PercentileResult | None = None
     if rr is not None:
         if save_history:
             append_snapshot(f"{key_base}_RR", rr)

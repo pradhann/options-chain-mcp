@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -35,11 +34,11 @@ class VixStripResult:
     asof: str
     symbol: str
     front_expiration: str
-    back_expiration: Optional[str]
+    back_expiration: str | None
     days_target: int
     replicated_vix: float
-    published_vix: Optional[float]
-    diff_vol_points: Optional[float]
+    published_vix: float | None
+    diff_vol_points: float | None
     wing_boost_pct: float
     replicated_vix_with_wing_boost: float
 
@@ -170,7 +169,7 @@ def vix_strip(symbol: str = "SPX", target_days: int = 30,
     replicated_vix_boost = float(np.sqrt(max(var_30_b, 0.0)) * 100)
 
     # Compare to published VIX (only meaningful for SPX-derived symbols).
-    published: Optional[float] = None
+    published: float | None = None
     try:
         vix_t = yf.Ticker("^VIX")
         published = vix_t.fast_info.get("last_price")
