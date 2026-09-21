@@ -2,34 +2,38 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
     </url>
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/cli/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
     </url>
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/contributing/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
+    </url>
+    <url>
+         <loc>https://pradhann.github.io/options-chain-mcp/feeds/</loc>
+         <lastmod>2026-09-21</lastmod>
     </url>
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/mcp/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
     </url>
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/quickstart/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
     </url>
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/concepts/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
     </url>
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/concepts/dashboard/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
     </url>
     <url>
          <loc>https://pradhann.github.io/options-chain-mcp/concepts/greeks/</loc>
-         <lastmod>2026-06-25</lastmod>
+         <lastmod>2026-09-21</lastmod>
     </url>
 </urlset>

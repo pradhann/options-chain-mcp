@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -31,7 +31,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -272,6 +272,25 @@
     
   
   CLI reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../feeds/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data feeds
 
       </a>
     </li>
@@ -579,6 +598,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../feeds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data feeds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../mcp/" class="md-nav__link">
         
   
@@ -629,7 +675,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
           <div class="md-nav__link md-nav__container">
@@ -651,14 +697,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -873,7 +919,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>optionslab
 </code></pre></div>
 <p>Python <strong>3.12+</strong> is required. The install brings in <code>numpy</code>, <code>scipy</code>, <code>pandas</code>, <code>matplotlib</code>, <code>yfinance</code>, and <code>mcp</code>. For development with the test suite, add the <code>[test]</code> extra:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;optionslab[test]&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"optionslab[test]"</span>
 </code></pre></div>
 <h2 id="library">Library<a class="headerlink" href="#library" title="Permanent link">&para;</a></h2>
 <p>A <code>Position</code> is a list of <code>Leg</code>s. Every analysis function takes a <code>Position</code> (and, for valuation, a <code>MarketContext</code>) and returns a typed result with <code>.to_dict()</code> for JSON edge.</p>
@@ -883,11 +929,11 @@
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">)</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">pos</span> <span class="o">=</span> <span class="n">Position</span><span class="o">.</span><span class="n">from_dicts</span><span class="p">([</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="p">{</span><span class="s2">&quot;side&quot;</span><span class="p">:</span> <span class="s2">&quot;long&quot;</span><span class="p">,</span>  <span class="s2">&quot;option_type&quot;</span><span class="p">:</span> <span class="s2">&quot;call&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>     <span class="s2">&quot;strike&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;premium&quot;</span><span class="p">:</span> <span class="mf">6.0</span><span class="p">,</span> <span class="s2">&quot;expiration&quot;</span><span class="p">:</span> <span class="s2">&quot;2026-09-18&quot;</span><span class="p">},</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="p">{</span><span class="s2">&quot;side&quot;</span><span class="p">:</span> <span class="s2">&quot;short&quot;</span><span class="p">,</span> <span class="s2">&quot;option_type&quot;</span><span class="p">:</span> <span class="s2">&quot;call&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>     <span class="s2">&quot;strike&quot;</span><span class="p">:</span> <span class="mi">110</span><span class="p">,</span> <span class="s2">&quot;premium&quot;</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span> <span class="s2">&quot;expiration&quot;</span><span class="p">:</span> <span class="s2">&quot;2026-09-18&quot;</span><span class="p">},</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bull-call-100-110&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="p">{</span><span class="s2">"side"</span><span class="p">:</span> <span class="s2">"long"</span><span class="p">,</span>  <span class="s2">"option_type"</span><span class="p">:</span> <span class="s2">"call"</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>     <span class="s2">"strike"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"premium"</span><span class="p">:</span> <span class="mf">6.0</span><span class="p">,</span> <span class="s2">"expiration"</span><span class="p">:</span> <span class="s2">"2026-09-18"</span><span class="p">},</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="p">{</span><span class="s2">"side"</span><span class="p">:</span> <span class="s2">"short"</span><span class="p">,</span> <span class="s2">"option_type"</span><span class="p">:</span> <span class="s2">"call"</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>     <span class="s2">"strike"</span><span class="p">:</span> <span class="mi">110</span><span class="p">,</span> <span class="s2">"premium"</span><span class="p">:</span> <span class="mf">2.5</span><span class="p">,</span> <span class="s2">"expiration"</span><span class="p">:</span> <span class="s2">"2026-09-18"</span><span class="p">},</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="s2">"bull-call-100-110"</span><span class="p">)</span>
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">expiration_payoff</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="mi">115</span><span class="p">)</span><span class="o">.</span><span class="n">total_dollars</span>      <span class="c1"># 650.0</span>
 <a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">position_metrics</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span><span class="o">.</span><span class="n">max_profit</span>               <span class="c1"># 650.0</span>
@@ -901,13 +947,13 @@
 <h3 id="save-a-position-by-name">Save a Position by name<a class="headerlink" href="#save-a-position-by-name" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">optionslab.storage</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_position</span><span class="p">,</span> <span class="n">get_position</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">save_position</span><span class="p">(</span><span class="n">pos</span><span class="p">)</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">get_position</span><span class="p">(</span><span class="s2">&quot;bull-call-100-110&quot;</span><span class="p">)</span>    <span class="c1"># reloaded</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">get_position</span><span class="p">(</span><span class="s2">"bull-call-100-110"</span><span class="p">)</span>    <span class="c1"># reloaded</span>
 </code></pre></div>
 <p>Saved positions live in <code>.optionslab/positions.json</code> under your project root (the same convention <code>.git</code> uses).</p>
 <h2 id="cli">CLI<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h2>
 <p>Every position-taking verb accepts the <strong>same spec</strong>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>--position NAME      # saved in .optionslab/positions.json
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>--legs &#39;[{...}]&#39;     # inline JSON list of legs
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>--legs '[{...}]'     # inline JSON list of legs
 </code></pre></div>
 <p>A few representative invocations:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Options chain with Greeks per strike</span>
@@ -929,10 +975,10 @@
 </code></pre></div>
 <p>Add it to your Claude Desktop config (Settings → Developer → Edit Config):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">&quot;optionslab&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;python&quot;</span><span class="p">,</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;-m&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;optionslab.mcp_server&quot;</span><span class="p">]</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="nt">"optionslab"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">      </span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"python"</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">      </span><span class="nt">"args"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"-m"</span><span class="p">,</span><span class="w"> </span><span class="s2">"optionslab.mcp_server"</span><span class="p">]</span>
 <a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">  </span><span class="p">}</span>
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">}</span>
@@ -1021,7 +1067,7 @@
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "content.code.copy", "content.code.annotate", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
