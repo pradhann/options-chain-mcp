@@ -18,6 +18,7 @@ Schema:
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from ..core.position import Position
@@ -28,11 +29,24 @@ SCHEMA_VERSION = 1
 
 
 def _find_project_root(start: Path | None = None) -> Path | None:
-    """Search up from `start` (default cwd) for an existing .optionslab dir."""
+    """Search up from `start` (default cwd) for an existing .optionslab dir.
+
+    With no explicit `start`, fall back to OPTIONSLAB_HOME (when it points at
+    a `.optionslab` dir) and then to the checkout this package runs from, so a
+    server launched from `/` (as the Claude desktop app does) still finds the
+    project's data instead of trying to create `/.optionslab`.
+    """
     here = (start or Path.cwd()).resolve()
     for parent in [here, *here.parents]:
         if (parent / PROJECT_DIR).is_dir():
             return parent
+    if start is None:
+        env = os.environ.get("OPTIONSLAB_HOME")
+        if env and Path(env).name == PROJECT_DIR and Path(env).is_dir():
+            return Path(env).resolve().parent
+        checkout = Path(__file__).resolve().parents[2]
+        if (checkout / PROJECT_DIR).is_dir():
+            return checkout
     return None
 
 
