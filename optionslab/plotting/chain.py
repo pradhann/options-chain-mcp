@@ -7,17 +7,15 @@ are bid/ask noise, carry, or expected dividends.
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
+from typing import Optional
+
 import pandas as pd
 from matplotlib.axes import Axes
+import matplotlib.pyplot as plt
 
 from .style import (
-    CALL_COLOR,
-    PUT_COLOR,
-    SPOT_COLOR,
-    apply_style,
-    dollar_axis,
-    save_if_requested,
+    CALL_COLOR, PUT_COLOR, SPOT_COLOR,
+    apply_style, dollar_axis, save_if_requested,
 )
 
 
@@ -44,8 +42,8 @@ def plot_extrinsic(
     symbol: str,
     expiration: str,
     *,
-    ax: Axes | None = None,
-    save_path: str | None = None,
+    ax: Optional[Axes] = None,
+    save_path: Optional[str] = None,
 ) -> Axes:
     """Extrinsic value vs strike for calls (blue) and puts (red)."""
     with apply_style():

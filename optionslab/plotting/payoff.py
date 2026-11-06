@@ -10,25 +10,20 @@ long/short × call/put.
 
 from __future__ import annotations
 
-import matplotlib.pyplot as plt
+from typing import Optional
+
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
 
 from ..analysis.metrics import position_metrics
 from ..analysis.payoff import expiration_payoff
 from ..core.leg import Leg
 from ..core.position import Position
 from .style import (
-    ACCENT,
-    CALL_COLOR,
-    LOSS_COLOR,
-    PROFIT_COLOR,
-    SPOT_COLOR,
-    apply_style,
-    dollar_axis,
-    money,
-    save_if_requested,
+    ACCENT, CALL_COLOR, LOSS_COLOR, PROFIT_COLOR, SPOT_COLOR,
+    apply_style, dollar_axis, save_if_requested,
 )
 
 
@@ -40,16 +35,18 @@ def _domain(strikes: list[float], pad: float = 0.5) -> tuple[float, float]:
 
 
 def _fmt_money(v) -> str:
-    return v if v == "Unlimited" else money(v, 2)
+    if v == "Unlimited":
+        return "Unlimited"
+    return f"${v:,.2f}"
 
 
 def plot_payoff(
     position: Position,
     *,
-    s_range: tuple[float, float] | None = None,
-    title: str | None = None,
-    ax: Axes | None = None,
-    save_path: str | None = None,
+    s_range: Optional[tuple[float, float]] = None,
+    title: Optional[str] = None,
+    ax: Optional[Axes] = None,
+    save_path: Optional[str] = None,
 ) -> Axes:
     """Expiration P&L curve for any position. Returns the Axes.
 
@@ -115,7 +112,7 @@ def plot_primitives(
     strike: float = 100.0,
     premium: float = 5.0,
     *,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """2x2 grid of the four primitives (long/short × call/put).
 
@@ -170,7 +167,7 @@ def plot_vertical_spreads(
     call_p1: float, call_p2: float,
     put_p1: float, put_p2: float,
     *,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """Day-4 curriculum grid: all four vertical spreads at (K1, K2)."""
     if K1 >= K2:

@@ -6,12 +6,14 @@ glancing at saved positions; for analysis, use the verb subcommands.
 
 from __future__ import annotations
 
+from typing import Optional
+
 from ..data.chain import PRINT_COLUMNS, filter_near_money, load_chain
 from ..data.quotes import list_expirations, make_ticker
 from ..errors import OptionsLabError
 
 
-def _ask(prompt: str, default: str | None = None) -> str:
+def _ask(prompt: str, default: Optional[str] = None) -> str:
     suffix = f" [{default}]" if default else ""
     try:
         raw = input(f"{prompt}{suffix}: ").strip()
@@ -20,7 +22,7 @@ def _ask(prompt: str, default: str | None = None) -> str:
     return raw or (default or "")
 
 
-def _choose_expiration(expirations: list[str]) -> str | None:
+def _choose_expiration(expirations: list[str]) -> Optional[str]:
     print(f"\n{len(expirations)} expirations:")
     for i, exp in enumerate(expirations):
         print(f"  [{i:2d}] {exp}")

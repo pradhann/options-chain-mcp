@@ -12,7 +12,7 @@ Pure compositions over `pricing` and `valuation`.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import Optional, Sequence
 
 from ..core.market import MarketContext
 from ..core.position import Position
@@ -20,6 +20,7 @@ from ..core.results import ScenarioResult
 from ..pricing import bs_greeks, bs_price, year_fraction
 from ._ivs import IvSpec, resolve_ivs
 from .valuation import value as _value
+
 
 DEFAULT_SPOT_PCTS = [-30, -20, -10, 0, 10, 20, 30, 40]
 DEFAULT_DAYS_FORWARD = [0, 7, 14, 30, 60, 90]
@@ -31,12 +32,12 @@ def theoretical_price(
     expiration: str,
     option_type: str,
     *,
-    s_now: float | None = None,
-    s_future: float | None = None,
+    s_now: Optional[float] = None,
+    s_future: Optional[float] = None,
     days_forward: float = 0.0,
-    iv: float | None = None,
-    r: float | None = None,
-    q: float | None = None,
+    iv: Optional[float] = None,
+    r: Optional[float] = None,
+    q: Optional[float] = None,
 ) -> dict:
     """Theoretical option value + Greeks at a hypothetical spot/time.
 
@@ -92,8 +93,8 @@ def scenario_grid(
     position: Position,
     market: MarketContext,
     *,
-    spot_pcts: Sequence[float] | None = None,
-    days_forward: Sequence[float] | None = None,
+    spot_pcts: Optional[Sequence[float]] = None,
+    days_forward: Optional[Sequence[float]] = None,
     ivs: IvSpec = None,
 ) -> ScenarioResult:
     """Dollar P&L matrix over spot moves × days forward.

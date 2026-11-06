@@ -50,6 +50,9 @@ from .core import (
     parse_legs,
 )
 
+# Pricing engine — the low-level math, sometimes useful directly.
+from .pricing import bs_greeks, bs_price, implied_vol, year_fraction
+
 # Errors users may want to catch.
 from .errors import (
     ExpirationNotFoundError,
@@ -57,9 +60,6 @@ from .errors import (
     OptionsLabError,
     SpotUnavailableError,
 )
-
-# Pricing engine — the low-level math, sometimes useful directly.
-from .pricing import bs_greeks, bs_price, implied_vol, year_fraction
 
 __all__ = [
     # core

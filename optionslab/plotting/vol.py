@@ -14,7 +14,7 @@ displays or saves. None calls plt.show().
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import Optional, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,25 +23,19 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 from .style import (
-    ACCENT,
-    CALL_COLOR,
-    LOSS_COLOR,
-    PROFIT_COLOR,
-    PUT_COLOR,
-    SPOT_COLOR,
-    apply_style,
-    dollar_axis,
-    save_if_requested,
+    ACCENT, CALL_COLOR, PROFIT_COLOR, LOSS_COLOR, PUT_COLOR, SPOT_COLOR,
+    apply_style, dollar_axis, save_if_requested,
 )
+
 
 # ---------- D1: RV estimator zoo ----------
 
 def plot_rv_estimators(
     rv_table: pd.DataFrame,
     *,
-    title: str | None = None,
-    ax: Axes | None = None,
-    save_path: str | None = None,
+    title: Optional[str] = None,
+    ax: Optional[Axes] = None,
+    save_path: Optional[str] = None,
 ) -> Axes:
     """All RV estimators on one chart so divergences are visible."""
     with apply_style():
@@ -64,14 +58,14 @@ def plot_rv_estimators(
 def plot_iv_smile(
     chain,
     *,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """IV vs strike, vs log-moneyness, vs delta — for one expiration's chain."""
     with apply_style({"figure.figsize": (15, 5)}):
         fig, axes = plt.subplots(1, 3)
         spot = chain.spot
 
-        for kind, ax in zip(("strike", "logmoney", "delta"), axes, strict=True):
+        for kind, ax in zip(("strike", "logmoney", "delta"), axes):
             for df, color, label in (
                 (chain.calls, CALL_COLOR, "Calls"),
                 (chain.puts, PUT_COLOR, "Puts"),
@@ -118,8 +112,8 @@ def plot_iv_smile(
 def plot_vrp(
     series: Sequence[dict],
     *,
-    marks: dict[str, str] | None = None,
-    save_path: str | None = None,
+    marks: Optional[dict[str, str]] = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """VRP time series (top) + histogram (bottom).
 
@@ -177,7 +171,7 @@ def plot_vrp(
 def plot_term_structure(
     hist: pd.DataFrame,
     *,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """VIX-family levels (top) + VIX3M/VIX ratio (bottom)."""
     with apply_style({"figure.figsize": (12, 7)}):
@@ -219,7 +213,7 @@ def plot_term_structure(
 def plot_skew_curve(
     chain,
     *,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """IV(K) for both calls and puts, with 25Δ vertical markers."""
     with apply_style():
@@ -262,7 +256,7 @@ def plot_skew_curve(
 def plot_vix_strip_overlay(
     result,
     *,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """Bar chart: replicated VIX, published VIX, and wing-boost replication."""
     labels = ["Replicated", "Published", f"+ {result.wing_boost_pct:.0f}% wings"]
@@ -283,7 +277,7 @@ def plot_vix_strip_overlay(
             f"Model-free VIX strip  ·  {result.symbol}  ·  ≈{result.days_target}d",
             pad=10,
         )
-        for b, v in zip(bars, values, strict=True):
+        for b, v in zip(bars, values):
             if not np.isnan(v):
                 ax.text(b.get_x() + b.get_width() / 2,
                         v + max(values) * 0.01,
@@ -298,7 +292,7 @@ def plot_vix_strip_overlay(
 def plot_dashboard_panel(
     dashboard,
     *,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> Figure:
     """A compact one-figure summary: five numbered tiles with percentile bars."""
     fields = [
@@ -320,7 +314,7 @@ def plot_dashboard_panel(
     ]
     with apply_style({"figure.figsize": (14, 4)}):
         fig, axes = plt.subplots(1, 5)
-        for ax, (label, value, pct) in zip(axes, fields, strict=True):
+        for ax, (label, value, pct) in zip(axes, fields):
             ax.set_xlim(0, 1)
             ax.set_ylim(0, 1)
             ax.axis("off")

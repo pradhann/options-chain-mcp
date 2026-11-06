@@ -11,13 +11,14 @@ same.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
 from ..core.position import Position
 
-IvSpec = float | Sequence[float] | None
+
+IvSpec = Union[float, Sequence[float], None]
 
 
 def resolve_ivs(position: Position, ivs: IvSpec) -> list[float]:

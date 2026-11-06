@@ -16,7 +16,8 @@ Functions:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -76,7 +77,7 @@ class VrpTodayResult:
         }
 
 
-def _interpret_vrp(vrp: float, pct: float | None) -> str:
+def _interpret_vrp(vrp: float, pct: Optional[float]) -> str:
     if vrp < 0:
         return "negative VRP — RV exceeded IV; vol sellers were paid less than realized"
     if pct is None:

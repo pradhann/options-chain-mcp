@@ -17,30 +17,37 @@ list of leg dicts. They also accept `position_name` to load from
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Optional
 
 import matplotlib
-
 matplotlib.use("Agg")  # headless before any pyplot import
 
 from mcp.server.fastmcp import FastMCP, Image
 
 from ..analysis.metrics import position_metrics as _metrics
-from ..analysis.parity import parity_check as _parity_check
 from ..analysis.payoff import expiration_payoff
-from ..analysis.scenario import scenario_grid
-from ..analysis.scenario import theoretical_price as _theoretical
-from ..analysis.synthetics import (
-    long_stock_payoff,
-    short_stock_payoff,
-    synthetic_long_stock,
-    synthetic_short_stock,
-)
-from ..analysis.synthetics import (
-    verify_synthetic as _verify_synthetic,
-)
+from ..analysis.scenario import scenario_grid, theoretical_price as _theoretical
 from ..analysis.valuation import greeks as _greeks
 from ..analysis.valuation import value as _value
+from ..core.market import MarketContext
+from ..core.position import Position
+from ..data.chain import filter_liquid, filter_near_money, load_chain
+from ..data.events import analyst_targets as _targets
+from ..data.events import next_earnings as _earnings
+from ..data.events import recent_news as _news
+from ..data.quotes import (
+    get_dividend_yield, get_risk_free_rate, get_spot, list_expirations,
+    make_ticker,
+)
+from ..analysis.parity import parity_check as _parity_check
+from ..analysis.synthetics import (
+    long_stock_payoff, short_stock_payoff,
+    synthetic_long_call, synthetic_long_put, synthetic_long_stock,
+    synthetic_short_call, synthetic_short_put, synthetic_short_stock,
+    verify_synthetic as _verify_synthetic,
+)
 from ..analysis.vol.dashboard import vol_dashboard as _vol_dashboard
 from ..analysis.vol.event import event_implied_move as _event_implied_move
 from ..analysis.vol.skew import skew_metrics as _skew_metrics
@@ -48,31 +55,20 @@ from ..analysis.vol.strip import vix_strip as _vix_strip
 from ..analysis.vol.term import term_structure as _term_structure
 from ..analysis.vol.vrp import vrp_history as _vrp_history
 from ..analysis.vol.vrp import vrp_today as _vrp_today
-from ..core.market import MarketContext
-from ..core.position import Position
-from ..data.chain import filter_liquid, filter_near_money, load_chain
-from ..data.events import recent_news as _news
-from ..data.quotes import (
-    get_risk_free_rate,
-    list_expirations,
-    make_ticker,
-)
 from ..data.vol import iv_term_structure as _iv_term
+from ..data.vol import realized_vol as _rv
+from ..data.vol import realized_vol_all_estimators as _rv_all
 from ..errors import OptionsLabError
-from ..feeds import bars, calendar, fundamentals
 from ..plotting.chain import plot_extrinsic
 from ..plotting.greek import plot_greek_vs_spot
 from ..plotting.payoff import plot_payoff, plot_primitives, plot_vertical_spreads
 from ..plotting.scenario import plot_pnl_grid
-from ..plotting.style import default_chart_path, render_to_png_bytes
+from ..plotting.style import render_to_png_bytes
 from ..pricing import year_fraction
 from ..storage.positions import (
-    delete_position,
-    get_position,
-    list_positions,
-    save_position,
+    delete_position, get_position, list_positions, save_position,
 )
-from .mcp_feeds import register as register_feed_tools
+
 
 mcp = FastMCP("optionslab")
 
@@ -94,7 +90,7 @@ def _resolve_position(position, position_name) -> Position:
     raise ValueError("`position` must be a dict or a list of leg dicts")
 
 
-def _market(spot: float, r: float | None, q: float) -> MarketContext:
+def _market(spot: float, r: Optional[float], q: float) -> MarketContext:
     return MarketContext.explicit(
         spot=spot,
         r=r if r is not None else get_risk_free_rate(),
@@ -102,10 +98,10 @@ def _market(spot: float, r: float | None, q: float) -> MarketContext:
     )
 
 
-def _deliver(fig, default_name: str, save_path: str | None) -> list:
+def _deliver(fig, default_name: str, save_path: Optional[str]) -> list:
     """Return [inline image, saved-path note] and always write a copy."""
     png = render_to_png_bytes(fig)
-    path = Path(save_path) if save_path else default_chart_path(Path(default_name).stem)
+    path = Path(save_path) if save_path else Path.cwd() / default_name
     path.write_bytes(png)
     return [Image(data=png, format="png"), f"Saved a copy to {path}"]
 
@@ -113,13 +109,9 @@ def _deliver(fig, default_name: str, save_path: str | None) -> list:
 # ---------- data ----------
 
 @mcp.tool()
-def get_spot_price(ticker: str) -> dict:
-    """Last regular-session price with its timestamp, session, and source.
-
-    For a spot you can size on, use `chain_report`: it checks this feed
-    spot against CBOE and the parity-implied spot.
-    """
-    return fundamentals.spot_quote(ticker)
+def get_spot_price(ticker: str) -> float:
+    """Current underlying price."""
+    return get_spot(make_ticker(ticker))
 
 
 @mcp.tool()
@@ -131,8 +123,8 @@ def list_expirations_tool(ticker: str) -> list[str]:
 @mcp.tool()
 def chain(
     ticker: str,
-    expiration: str | None = None,
-    exp_index: int | None = None,
+    expiration: Optional[str] = None,
+    exp_index: Optional[int] = None,
     near_money: int = 0,
 ) -> dict:
     """Decomposed options chain with Greeks per strike.
@@ -153,13 +145,10 @@ def chain(
 
 
 @mcp.tool()
-def realized_vol(ticker: str) -> dict:
-    """Realized vol (%) as the full matrix: five estimators x 21/63/126 sessions.
-
-    Always all fifteen cells, with the worst-for-long and worst-for-short
-    cells named and the close-to-close minus Parkinson gap signature.
-    """
-    return bars.rv_matrix(ticker)
+def realized_vol(ticker: str, window_days: int = 30) -> dict:
+    """Annualized realized volatility (%)."""
+    return {"ticker": ticker.upper(), "window_days": window_days,
+            "realized_vol_pct": _rv(ticker, window_days)}
 
 
 @mcp.tool()
@@ -171,8 +160,8 @@ def iv_term_structure(ticker: str, max_expirations: int = 12) -> dict:
 
 @mcp.tool()
 def next_earnings(ticker: str) -> dict:
-    """Next earnings date from two sources; `verified` only when they agree."""
-    return calendar.next_earnings(ticker)
+    """Next earnings date + EPS/revenue estimates."""
+    return _earnings(make_ticker(ticker))
 
 
 @mcp.tool()
@@ -183,8 +172,8 @@ def recent_news(ticker: str, n: int = 10) -> list:
 
 @mcp.tool()
 def analyst_targets(ticker: str) -> dict:
-    """Analyst target count and range as a staleness read. No mean, by design."""
-    return fundamentals.analyst_targets(ticker)
+    """Analyst price targets + rating."""
+    return _targets(make_ticker(ticker))
 
 
 # ---------- analysis: positions ----------
@@ -192,8 +181,8 @@ def analyst_targets(ticker: str) -> dict:
 @mcp.tool()
 def payoff(
     s_t: float,
-    position: object | None = None,
-    position_name: str | None = None,
+    position: Optional[object] = None,
+    position_name: Optional[str] = None,
 ) -> dict:
     """Expiration P&L for a position at price `s_t`."""
     pos = _resolve_position(position, position_name)
@@ -202,8 +191,8 @@ def payoff(
 
 @mcp.tool()
 def metrics(
-    position: object | None = None,
-    position_name: str | None = None,
+    position: Optional[object] = None,
+    position_name: Optional[str] = None,
 ) -> dict:
     """Closed-form max profit, max loss, breakeven(s), net entry cost."""
     pos = _resolve_position(position, position_name)
@@ -213,11 +202,11 @@ def metrics(
 @mcp.tool()
 def value(
     spot: float,
-    sigma: float | None = None,
-    r: float | None = None,
+    sigma: Optional[float] = None,
+    r: Optional[float] = None,
     q: float = 0.0,
-    position: object | None = None,
-    position_name: str | None = None,
+    position: Optional[object] = None,
+    position_name: Optional[str] = None,
 ) -> dict:
     """Mark-to-model dollar value (+ P&L vs entry) for a position."""
     pos = _resolve_position(position, position_name)
@@ -227,11 +216,11 @@ def value(
 @mcp.tool()
 def greeks(
     spot: float,
-    sigma: float | None = None,
-    r: float | None = None,
+    sigma: Optional[float] = None,
+    r: Optional[float] = None,
     q: float = 0.0,
-    position: object | None = None,
-    position_name: str | None = None,
+    position: Optional[object] = None,
+    position_name: Optional[str] = None,
 ) -> dict:
     """Portfolio Greeks (delta/gamma/theta/vega/rho) with $ versions."""
     pos = _resolve_position(position, position_name)
@@ -241,13 +230,13 @@ def greeks(
 @mcp.tool()
 def scenario(
     spot: float,
-    sigma: float | None = None,
-    r: float | None = None,
+    sigma: Optional[float] = None,
+    r: Optional[float] = None,
     q: float = 0.0,
-    position: object | None = None,
-    position_name: str | None = None,
-    spot_pcts: list[float] | None = None,
-    days_forward: list[float] | None = None,
+    position: Optional[object] = None,
+    position_name: Optional[str] = None,
+    spot_pcts: Optional[list[float]] = None,
+    days_forward: Optional[list[float]] = None,
 ) -> dict:
     """Dollar P&L matrix: spot moves × days forward."""
     pos = _resolve_position(position, position_name)
@@ -263,12 +252,12 @@ def theoretical_price(
     strike: float,
     expiration: str,
     option_type: str,
-    s_now: float | None = None,
-    s_future: float | None = None,
+    s_now: Optional[float] = None,
+    s_future: Optional[float] = None,
     days_forward: float = 0.0,
-    iv: float | None = None,
-    r: float | None = None,
-    q: float | None = None,
+    iv: Optional[float] = None,
+    r: Optional[float] = None,
+    q: Optional[float] = None,
 ) -> dict:
     """Black-Scholes value + Greeks at a hypothetical spot/time."""
     return _theoretical(
@@ -296,8 +285,8 @@ def positions_get(name: str) -> dict:
 def positions_save(
     name: str,
     legs: list[dict],
-    symbol: str | None = None,
-    notes: str | None = None,
+    symbol: Optional[str] = None,
+    notes: Optional[str] = None,
 ) -> dict:
     """Save (or overwrite) a named position."""
     pos = Position.from_dicts(legs, name=name, symbol=symbol, notes=notes)
@@ -316,10 +305,10 @@ def positions_delete(name: str) -> dict:
 
 @mcp.tool()
 def chart_payoff(
-    position: object | None = None,
-    position_name: str | None = None,
-    title: str | None = None,
-    save_path: str | None = None,
+    position: Optional[object] = None,
+    position_name: Optional[str] = None,
+    title: Optional[str] = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """Expiration payoff curve (any position). Inline image + saved copy."""
     pos = _resolve_position(position, position_name)
@@ -332,7 +321,7 @@ def chart_payoff(
 def chart_primitives(
     strike: float = 100.0,
     premium: float = 5.0,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """2x2 grid of the four payoff primitives."""
     fig = plot_primitives(strike, premium)
@@ -344,7 +333,7 @@ def chart_verticals(
     k1: float, k2: float,
     call_p1: float, call_p2: float,
     put_p1: float, put_p2: float,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """2x2 grid of bull/bear call/put vertical spreads at (k1, k2)."""
     fig = plot_vertical_spreads(k1, k2, call_p1, call_p2, put_p1, put_p2)
@@ -356,13 +345,13 @@ def chart_greek(
     strike: float,
     option_type: str,
     sigma: float,
-    expiration: str | None = None,
-    T_years: float | None = None,
+    expiration: Optional[str] = None,
+    T_years: Optional[float] = None,
     greek: str = "delta",
-    r: float | None = None,
+    r: Optional[float] = None,
     q: float = 0.0,
     overlay_oracle: bool = False,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """Greek vs spot for fixed K, T, r, σ. Default: delta sigmoid."""
     if expiration is None and T_years is None:
@@ -378,9 +367,9 @@ def chart_greek(
 @mcp.tool()
 def chart_extrinsic(
     ticker: str,
-    expiration: str | None = None,
-    exp_index: int | None = None,
-    save_path: str | None = None,
+    expiration: Optional[str] = None,
+    exp_index: Optional[int] = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """Extrinsic-value-by-strike chart for one expiration."""
     ch = load_chain(ticker, expiration=expiration, exp_index=exp_index,
@@ -396,14 +385,14 @@ def chart_extrinsic(
 @mcp.tool()
 def chart_scenario(
     spot: float,
-    sigma: float | None = None,
-    r: float | None = None,
+    sigma: Optional[float] = None,
+    r: Optional[float] = None,
     q: float = 0.0,
-    position: object | None = None,
-    position_name: str | None = None,
-    spot_pcts: list[float] | None = None,
-    days_forward: list[float] | None = None,
-    save_path: str | None = None,
+    position: Optional[object] = None,
+    position_name: Optional[str] = None,
+    spot_pcts: Optional[list[float]] = None,
+    days_forward: Optional[list[float]] = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """P&L heatmap: rows = spot moves, cols = days forward."""
     pos = _resolve_position(position, position_name)
@@ -416,6 +405,27 @@ def chart_scenario(
 
 
 # ---------- Week 3 volatility tools ----------
+
+@mcp.tool()
+def realized_vol_extended(
+    ticker: str,
+    window_days: int = 21,
+    estimator: str = "close_to_close",
+    all_estimators: bool = False,
+) -> dict:
+    """Annualized realized vol (%). `estimator` ∈ {close_to_close, parkinson,
+    garman_klass, rogers_satchell, yang_zhang}. `all_estimators=True`
+    reports all five side-by-side for today.
+    """
+    if all_estimators:
+        df = _rv_all(ticker, window_days)
+        return {"ticker": ticker.upper(), "window_days": window_days,
+                "latest_pct_by_estimator":
+                    {k: round(float(v), 3) for k, v in df.iloc[-1].items()}}
+    return {"ticker": ticker.upper(), "estimator": estimator,
+            "window_days": window_days,
+            "realized_vol_pct": _rv(ticker, window_days, estimator=estimator)}
+
 
 @mcp.tool()
 def vrp_today() -> dict:
@@ -438,8 +448,8 @@ def vix_term_structure() -> dict:
 @mcp.tool()
 def skew_metrics(
     ticker: str,
-    expiration: str | None = None,
-    exp_index: int | None = None,
+    expiration: Optional[str] = None,
+    exp_index: Optional[int] = None,
     save_history: bool = False,
 ) -> dict:
     """25Δ Risk Reversal + 25Δ Butterfly + ATM IV for one expiration."""
@@ -468,8 +478,8 @@ def vol_dashboard(
     skew_symbol: str = "SPY",
     skew_exp_index: int = 4,
     save_history: bool = True,
-    yesterdays_call: str | None = None,
-    vol_view: str | None = None,
+    yesterdays_call: Optional[str] = None,
+    vol_view: Optional[str] = None,
 ) -> dict:
     """The daily Vol Dashboard — five computed fields + two human passthrough.
 
@@ -490,7 +500,7 @@ def chart_rv(
     ticker: str,
     window_days: int = 21,
     lookback_days: int = 1260,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """RV-estimator-comparison chart — all five estimators on one panel."""
     from ..data.vol import realized_vol_all_estimators
@@ -503,9 +513,9 @@ def chart_rv(
 @mcp.tool()
 def chart_smile(
     ticker: str,
-    expiration: str | None = None,
-    exp_index: int | None = None,
-    save_path: str | None = None,
+    expiration: Optional[str] = None,
+    exp_index: Optional[int] = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """IV smile, 3-panel: vs strike / log-moneyness / delta."""
     from ..plotting.vol import plot_iv_smile
@@ -516,7 +526,7 @@ def chart_smile(
 
 
 @mcp.tool()
-def chart_vrp(years: int = 15, save_path: str | None = None) -> list:
+def chart_vrp(years: int = 15, save_path: Optional[str] = None) -> list:
     """VRP time series + histogram with marquee dates."""
     from ..plotting.vol import plot_vrp
     res = _vrp_history(years=years)
@@ -529,7 +539,7 @@ def chart_vrp(years: int = 15, save_path: str | None = None) -> list:
 
 
 @mcp.tool()
-def chart_term(save_path: str | None = None) -> list:
+def chart_term(save_path: Optional[str] = None) -> list:
     """VIX term-structure history + VIX3M/VIX ratio history."""
     from ..analysis.vol.term import term_structure_history
     from ..plotting.vol import plot_term_structure
@@ -541,9 +551,9 @@ def chart_term(save_path: str | None = None) -> list:
 @mcp.tool()
 def chart_skew_curve(
     ticker: str,
-    expiration: str | None = None,
-    exp_index: int | None = None,
-    save_path: str | None = None,
+    expiration: Optional[str] = None,
+    exp_index: Optional[int] = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """IV(K) snapshot with 25Δ markers."""
     from ..plotting.vol import plot_skew_curve
@@ -557,7 +567,7 @@ def chart_skew_curve(
 def chart_vix_strip(
     ticker: str = "SPX",
     target_days: int = 30,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """Replicated VIX vs published + wing-boost sensitivity bar chart."""
     from ..plotting.vol import plot_vix_strip_overlay
@@ -572,7 +582,7 @@ def chart_vix_strip(
 def chart_dashboard(
     skew_symbol: str = "SPY",
     skew_exp_index: int = 4,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """Compact panel of all 5 dashboard fields with percentile bars."""
     from ..plotting.vol import plot_dashboard_panel
@@ -588,8 +598,8 @@ def parity_check(
     ticker: str,
     strike: float,
     expiration: str,
-    r: float | None = None,
-    q: float | None = None,
+    r: Optional[float] = None,
+    q: Optional[float] = None,
 ) -> dict:
     """W1.D5 — Put-call parity from a live chain at one strike.
 
@@ -606,8 +616,8 @@ def verify_synthetic_stock(
     strike: float,
     call_premium: float,
     put_premium: float,
-    s_min: float | None = None,
-    s_max: float | None = None,
+    s_min: Optional[float] = None,
+    s_max: Optional[float] = None,
     points: int = 21,
 ) -> dict:
     """W1.D6 — Build a synthetic stock (long or short) and verify against
@@ -638,11 +648,11 @@ def chart_greek_time(
     option_type: str,
     sigma: float,
     greek: str = "gamma",
-    r: float | None = None,
+    r: Optional[float] = None,
     q: float = 0.0,
     t_min_days: float = 1.0,
     t_max_days: float = 365.0,
-    save_path: str | None = None,
+    save_path: Optional[str] = None,
 ) -> list:
     """W2.D3/D4/D5 — A Greek as a function of days-to-expiry.
 
@@ -650,16 +660,13 @@ def chart_greek_time(
     for the asymptote-near-expiry shape and "vega" for the √T scaling.
     """
     from ..plotting.greek import plot_greek_vs_time
-    r_used = get_risk_free_rate() if r is None else r
+    r_used = _get_risk_free_rate() if r is None else r
     ax = plot_greek_vs_time(
         strike, spot, r_used, sigma, option_type, q,
         greek=greek, t_range_days=(t_min_days, t_max_days),
     )
     name = f"optionslab_{greek}_vs_time_K{int(strike)}.png"
     return _deliver(ax.figure, name, save_path)
-
-
-register_feed_tools(mcp)
 
 
 def main() -> None:

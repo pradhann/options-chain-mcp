@@ -6,12 +6,13 @@ notebooks / adapters can decide what to do.
 
 from __future__ import annotations
 
+from typing import Optional
+
 import yfinance as yf
 
 from ..errors import (
     ExpirationNotFoundError,
     NoOptionsDataError,
-    OptionsLabError,
     SpotUnavailableError,
 )
 
@@ -55,8 +56,8 @@ def list_expirations(ticker: yf.Ticker) -> list[str]:
 def resolve_expiration(
     expirations: list[str],
     *,
-    requested: str | None = None,
-    index: int | None = None,
+    requested: Optional[str] = None,
+    index: Optional[int] = None,
 ) -> str:
     """Pick one expiration: explicit index, then date, else nearest."""
     if index is not None:
@@ -76,32 +77,35 @@ def resolve_expiration(
 
 
 def get_dividend_yield(ticker: yf.Ticker) -> float:
-    """Trailing annual dividend yield, decimal (0.018 = 1.8%); 0.0 for non-payers.
+    """Best-effort continuous dividend yield as a decimal (0.018 = 1.8%).
 
-    Raises OptionsLabError when the provider cannot be read, so an
-    unreadable yield is never mistaken for a non-payer.
+    yfinance is inconsistent across fields; we normalize and fall back to
+    0.0 rather than raising.
     """
-    from ..feeds import fundamentals
-    from ..storage.snapshots import OfflineMiss
-
     try:
-        value = fundamentals.quote_summary(ticker.ticker).value.get("trailingAnnualDividendYield")
-    except (OfflineMiss, LookupError) as e:
-        raise OptionsLabError(f"dividend yield unavailable for {ticker.ticker}: {e}") from e
-    return float(value) if value and value > 0 else 0.0
+        info = ticker.info
+    except Exception:
+        return 0.0
+    v = info.get("trailingAnnualDividendYield") or info.get("dividendYield")
+    if v is None:
+        return 0.0
+    v = float(v)
+    if v <= 0:
+        return 0.0
+    # >1 can only be a percent (1.8 meaning 1.8%); normalize.
+    return v / 100.0 if v > 1.0 else v
 
 
-def get_risk_free_rate() -> float:
-    """13-week T-bill yield (^IRX) as a decimal.
-
-    Raises OptionsLabError when ^IRX cannot be read: pass `r` explicitly
-    rather than price on a rate nobody sourced.
-    """
-    from ..feeds import fundamentals
-
-    env = fundamentals.risk_free_rate()
-    if env["data"] is None:
-        raise OptionsLabError(
-            "risk-free rate unavailable (^IRX); pass r explicitly. "
-            f"{env['not_verified'][0]['reason']}")
-    return env["data"]["r"]
+def get_risk_free_rate(default: float = 0.045) -> float:
+    """Live 13-week T-bill yield (^IRX) as a decimal; `default` on failure."""
+    try:
+        irx = yf.Ticker("^IRX")
+        price = irx.fast_info.get("last_price")
+        if not price:
+            hist = irx.history(period="5d")
+            price = float(hist["Close"].iloc[-1]) if not hist.empty else None
+        if price and price > 0:
+            return float(price) / 100.0
+    except Exception:
+        pass
+    return default

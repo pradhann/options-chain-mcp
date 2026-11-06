@@ -2,14 +2,14 @@
 
   quotes  — spot, expirations, dividend yield, risk-free rate
   chain   — option chain fetch + decomposition + per-strike Greeks
-  events  — recent headlines (display only)
-  vol     — realized-vol series, VIX family, IV term structure
+  events  — earnings, news, analyst targets
+  vol     — realized vol + IV term structure
 """
 
 from .chain import (
+    ChainSnapshot,
     GREEK_COLUMNS,
     PRINT_COLUMNS,
-    ChainSnapshot,
     add_greeks,
     add_value_decomposition,
     filter_liquid,
@@ -18,7 +18,7 @@ from .chain import (
     iv_at_strike,
     load_chain,
 )
-from .events import recent_news
+from .events import analyst_targets, next_earnings, recent_news
 from .quotes import (
     get_dividend_yield,
     get_risk_free_rate,
@@ -31,6 +31,7 @@ from .vol import (
     ESTIMATORS,
     VIX_TICKERS,
     iv_term_structure,
+    realized_vol,
     realized_vol_all_estimators,
     realized_vol_series,
     vix_curve,
@@ -47,10 +48,10 @@ __all__ = [
     "make_ticker", "get_spot", "list_expirations", "resolve_expiration",
     "get_dividend_yield", "get_risk_free_rate",
     # events
-    "recent_news",
+    "next_earnings", "recent_news", "analyst_targets",
     # vol
     "ESTIMATORS", "VIX_TICKERS",
-    "realized_vol_series", "realized_vol_all_estimators",
+    "realized_vol", "realized_vol_series", "realized_vol_all_estimators",
     "iv_term_structure",
     "vix_curve", "vix_history",
 ]

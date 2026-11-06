@@ -51,6 +51,3 @@ optionslab_*.png
 # Docs build output
 site/
 docs/_build/
-
-# Personal research and trade notes (never published)
-Analysis/

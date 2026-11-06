@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Optional
 
 from ..data.chain import load_chain
 from ..data.quotes import get_dividend_yield, get_risk_free_rate, make_ticker
@@ -94,8 +95,8 @@ def parity_check(
     strike: float,
     expiration: str,
     *,
-    r: float | None = None,
-    q: float | None = None,
+    r: Optional[float] = None,
+    q: Optional[float] = None,
 ) -> ParityResult:
     """Verify put-call parity at one strike on a live chain.
 
