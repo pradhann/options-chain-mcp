@@ -54,3 +54,11 @@ docs/_build/
 
 # Personal research and trade notes (never published)
 Analysis/
+
+# Private trade notes and prompts live at the repo root. Ignore root-level
+# markdown by default (public repo); the project's own docs are exempt below.
+/*.md
+!/README.md
+!/CHANGELOG.md
+!/CONTRIBUTING.md
+!/USAGE.md
